@@ -20,7 +20,7 @@ export default function App() {
 
         <Route path="/reservations" element={<Reservations />} />
 
-        <Route path="/guests" element={<Guests />} />
+        <Route path="/guests" element={<Guests />} /> 
 
       </Route>
 
