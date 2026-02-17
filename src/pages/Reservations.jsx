@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { createReservation, getReservations } from "../services/reservations.service";
+import { getGuests } from "../services/guests.service";
 
 
 const STATUS_LABEL = {
@@ -53,39 +54,56 @@ export default function Reservations() {
   const [statusFilter, setStatusFilter] = useState("All");
   const [isCreateOpen, setIsCreateOpen] = useState(false);
   const [formError, setFormError] = useState("");
+  const [guests, setGuests] = useState([]);
+
 
   const [form, setForm] = useState({
-    guestName: "",
-    roomNumber: "",
-    checkIn: "",
-    checkOut: "",
-    status: "Confirmed",
-  });
+  guestId: "",
+  roomNumber: "",
+  checkIn: "",
+  checkOut: "",
+  status: "Confirmed",
+});
+
 
 
   useEffect(() => {
     getReservations().then(setReservations);
+    getGuests().then(setGuests);
   }, []);
 
+  const guestById = useMemo(() => {
+  const map = new Map();
+  guests.forEach((g) => map.set(g.id, g));
+  return map;
+}, [guests]);
+
   const filtered = useMemo(() => {
-    const q = query.trim().toLowerCase();
-    return reservations.filter((r) => {
-      const matchesQuery =
-        !q ||
-        r.guestName.toLowerCase().includes(q) ||
-        r.roomNumber.toLowerCase().includes(q);
+  const q = query.trim().toLowerCase();
 
-      const matchesStatus = statusFilter === "All" || r.status === statusFilter;
+  return reservations.filter((r) => {
+    // obtenemos el nombre del huésped desde el guestId
+    const guestName =
+      guestById.get(r.guestId)?.fullName?.toLowerCase() ?? "";
 
-      return matchesQuery && matchesStatus;
-    });
-  }, [reservations, query, statusFilter]);
+    const matchesQuery =
+      !q ||
+      guestName.includes(q) ||
+      r.roomNumber.toLowerCase().includes(q);
+
+    const matchesStatus =
+      statusFilter === "All" || r.status === statusFilter;
+
+    return matchesQuery && matchesStatus;
+  });
+}, [reservations, query, statusFilter, guestById]);
+
 
   async function handleCreateReservation(e) {
   e.preventDefault();
   setFormError("");
 
-  if (!form.guestName.trim()) return setFormError("Falta el nombre del huésped");
+  if (!form.guestId) return setFormError("Seleccioná un huésped");
   if (!form.roomNumber.trim()) return setFormError("Falta el número de habitación");
   if (!form.checkIn) return setFormError("Falta la fecha de check-in");
   if (!form.checkOut) return setFormError("Falta la fecha de check-out");
@@ -177,7 +195,9 @@ function handleUpdateStatus(id, newStatus) {
           <tbody>
             {filtered.map((r) => (
               <tr key={r.id} className="border-b last:border-0 hover:bg-gray-50/70">
-                <td className="px-4 py-3 font-medium">{r.guestName}</td>
+                <td className="px-4 py-3 font-medium">
+                  {guestById.get(r.guestId)?.fullName ?? "—"}
+                </td>
                 <td className="px-4 py-3">{r.roomNumber}</td>
                 <td className="px-4 py-3">{r.checkIn}</td>
                 <td className="px-4 py-3">{r.checkOut}</td>
@@ -243,13 +263,20 @@ function handleUpdateStatus(id, newStatus) {
     <div className="grid gap-3 md:grid-cols-2">
       <label className="space-y-1">
         <span className="text-xs text-gray-600">Huésped</span>
-        <input
-          value={form.guestName}
-          onChange={(e) => setForm((p) => ({ ...p, guestName: e.target.value }))}
+        <select
+          value={form.guestId}
+          onChange={(e) => setForm((p) => ({ ...p, guestId: e.target.value }))}
           className="w-full rounded-xl border px-3 py-2 text-sm"
-          placeholder="Ej: Juan Pérez"
-        />
+        >
+          <option value="">Seleccionar huésped...</option>
+          {guests.map((g) => (
+            <option key={g.id} value={g.id}>
+              {g.fullName}
+            </option>
+          ))}
+        </select>
       </label>
+
 
       <label className="space-y-1">
         <span className="text-xs text-gray-600">Habitación</span>
