@@ -87,6 +87,19 @@ Con Vite 8 (Rolldown) a veces falla el build por la dependencia `tslib` de Supab
 
 3. **Errores**: Si al crear un huésped ves un mensaje de error en rojo (toast o en el modal), copiá el texto. Suele ser por RLS, tabla inexistente o columnas incorrectas. Si no ves error pero no aparece en Supabase, abrí las DevTools del navegador (F12) → pestaña **Console** y buscá `[guests.service] Supabase insert error`.
 
+## Login activo pero no se cargan los datos
+
+Si configuraste Supabase y el **login funciona** pero al entrar al Dashboard (o a Reservas, Habitaciones, etc.) **no aparecen los datos**:
+
+1. **Ejecutá de nuevo el script RLS** (incluye ahora permisos GRANT):
+   - En Supabase → **SQL Editor** → **New query**.
+   - Copiá y pegá **todo** el contenido de `supabase/migrations/002_rls_authenticated.sql`.
+   - Run. No debería dar error; si dice "relation public.rooms does not exist", primero tenés que crear las tablas (ver paso 2 de esta guía con el esquema inicial).
+2. **Comprobá que hay datos**: En Supabase → **Table Editor** → elegí `rooms`, `guests` o `reservations`. Si están vacías, no vas a ver nada en la app. Insertá datos de prueba (sección 5 de esta guía) o creá habitaciones/huéspedes desde la app.
+3. **Si ves un mensaje de error en rojo** en la app, copiá el texto. Si no ves error pero las listas están vacías, abrí las **DevTools** del navegador (F12) → pestaña **Console** y buscá líneas que digan `[reservations.service] Supabase error:` o similar; ahí aparece el motivo (permiso denegado, tabla inexistente, etc.).
+
+La app ya **no filtra por hotel_id** al leer: muestra todos los registros que RLS permita. Los nuevos que crees desde la app se guardan con `hotel_id = 'hotel-1'`.
+
 ## Multi-tenant (varios hoteles)
 
 El esquema usa `hotel_id` en todas las tablas (por defecto `'hotel-1'`). Los servicios filtran por ese valor. Cuando agregues autenticación, podés hacer que cada usuario tenga un `hotel_id` y usarlo en las consultas.

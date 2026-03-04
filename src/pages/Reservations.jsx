@@ -13,9 +13,11 @@ import { formatDateShort, shortReservationId } from "../utils/formatDate";
 import { PageLoader } from "../components/Spinner";
 import { RESERVATION_STATUS_CONFIG } from "../constants/statuses";
 import { isoTodayLocal } from "../utils/date";
+import { useAuth } from "../contexts/AuthContext";
 
 export default function Reservations() {
   const location = useLocation();
+  const { isSupabaseEnabled, session } = useAuth();
   const today = isoTodayLocal();
   const [reservations, setReservations] = useState([]);
   const [query, setQuery] = useState("");
@@ -32,6 +34,7 @@ export default function Reservations() {
   const [checkInError, setCheckInError] = useState("");
   const [guests, setGuests] = useState([]);
   const [rooms, setRooms] = useState([]);
+  const [loadError, setLoadError] = useState(null);
 
   const [form, setForm] = useState({
     guestId: "",
@@ -41,16 +44,20 @@ export default function Reservations() {
     status: "Confirmed",
   });
   const [loading, setLoading] = useState(true);
+  const canFetch = !isSupabaseEnabled || Boolean(session);
 
   useEffect(() => {
+    if (!canFetch) return;
+    setLoadError(null);
     Promise.all([getReservations(), getGuests(), getRooms()])
       .then(([res, g, rms]) => {
         setReservations(res);
         setGuests(g);
         setRooms(rms);
       })
+      .catch((err) => setLoadError(err?.message ?? "Error al cargar"))
       .finally(() => setLoading(false));
-  }, []);
+  }, [canFetch]);
 
   useEffect(() => {
     if (!location.state?.openReservationId) return;
@@ -328,6 +335,14 @@ export default function Reservations() {
   }
 
   if (loading) return <PageLoader />;
+  if (loadError) {
+    return (
+      <div className="rounded-xl border border-red-500/50 bg-red-500/10 p-4 text-red-300">
+        <p className="font-medium">Error al cargar</p>
+        <p className="mt-1 text-sm">{loadError}</p>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">

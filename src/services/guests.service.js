@@ -34,9 +34,11 @@ export async function getGuests() {
     const { data, error } = await supabase
       .from("guests")
       .select("*")
-      .eq("hotel_id", HOTEL_ID)
       .order("full_name");
-    if (error) throw new Error(error.message);
+    if (error) {
+      console.error("[guests.service] Supabase error:", error);
+      throw new Error(error.message || "Error al cargar huéspedes");
+    }
     return (data ?? []).map(rowToGuest);
   }
   return guestsMemory;

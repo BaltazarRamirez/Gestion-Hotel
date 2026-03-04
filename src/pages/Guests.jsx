@@ -11,8 +11,10 @@ import { Modal } from "../components/Modal";
 import { ConfirmModal } from "../components/ConfirmModal";
 import { Toast } from "../components/Toast";
 import { PageLoader } from "../components/Spinner";
+import { useAuth } from "../contexts/AuthContext";
 
 export default function Guests() {
+  const { isSupabaseEnabled, session } = useAuth();
   const [guests, setGuests] = useState([]);
   const [reservations, setReservations] = useState([]);
   const [query, setQuery] = useState("");
@@ -25,15 +27,21 @@ export default function Guests() {
   const [form, setForm] = useState({ fullName: "", email: "", phone: "" });
   const [toast, setToast] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState(null);
+  const canFetch = !isSupabaseEnabled || Boolean(session);
 
   useEffect(() => {
+    if (!canFetch) return;
+    setLoadError(null);
     Promise.all([getGuests(), getReservations()])
       .then(([g, r]) => {
         setGuests(g);
         setReservations(r);
       })
+      .catch((err) => setLoadError(err?.message ?? "Error al cargar"))
       .finally(() => setLoading(false));
-  }, []);
+  }, [canFetch]);
+
   useEffect(() => {
     if (!toast) return;
     const t = setTimeout(() => setToast(null), 2500);
@@ -121,6 +129,14 @@ export default function Guests() {
   }
 
   if (loading) return <PageLoader />;
+  if (loadError) {
+    return (
+      <div className="rounded-xl border border-red-500/50 bg-red-500/10 p-4 text-red-300">
+        <p className="font-medium">Error al cargar</p>
+        <p className="mt-1 text-sm">{loadError}</p>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">

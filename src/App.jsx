@@ -1,8 +1,10 @@
 import { Suspense, lazy, useEffect, useState } from "react";
 import { Routes, Route, Navigate } from "react-router-dom";
 
+import { AuthProvider } from "./contexts/AuthContext";
 import { SplashScreen } from "./components/SplashScreen";
 import { PageLoader } from "./components/Spinner";
+import ProtectedRoute from "./components/ProtectedRoute";
 import AppLayout from "./layouts/AppLayout";
 
 const Dashboard = lazy(() => import("./pages/Dashboard"));
@@ -10,6 +12,7 @@ const Rooms = lazy(() => import("./pages/Rooms"));
 const Reservations = lazy(() => import("./pages/Reservations"));
 const Guests = lazy(() => import("./pages/Guests"));
 const Calendar = lazy(() => import("./pages/Calendar"));
+const Login = lazy(() => import("./pages/Login"));
 
 const SPLASH_DURATION_MS = 2200;
 
@@ -22,7 +25,7 @@ export default function App() {
   }, []);
 
   return (
-    <>
+    <AuthProvider>
       <SplashScreen visible={splashVisible} />
       <div
         className="transition-opacity duration-500 ease-out"
@@ -39,7 +42,14 @@ export default function App() {
           }
         >
           <Routes>
-            <Route element={<AppLayout />}>
+            <Route path="/login" element={<Login />} />
+            <Route
+              element={
+                <ProtectedRoute>
+                  <AppLayout />
+                </ProtectedRoute>
+              }
+            >
               <Route path="/" element={<Navigate to="/dashboard" replace />} />
               <Route path="/dashboard" element={<Dashboard />} />
               <Route path="/rooms" element={<Rooms />} />
@@ -50,6 +60,6 @@ export default function App() {
           </Routes>
         </Suspense>
       </div>
-    </>
+    </AuthProvider>
   );
 }

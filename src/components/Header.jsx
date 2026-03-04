@@ -1,4 +1,5 @@
-import { useLocation } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
+import { useAuth } from "../contexts/AuthContext";
 
 const TITLES = {
   "/dashboard": "Dashboard",
@@ -10,6 +11,8 @@ const TITLES = {
 
 export default function Header({ onMenuClick }) {
   const location = useLocation();
+  const navigate = useNavigate();
+  const { isSupabaseEnabled, signOut } = useAuth();
   const title = TITLES[location.pathname] ?? "Panel";
 
   const today = new Date();
@@ -19,6 +22,11 @@ export default function Header({ onMenuClick }) {
     month: "2-digit",
     year: "numeric",
   });
+
+  async function handleSignOut() {
+    await signOut();
+    navigate("/login", { replace: true });
+  }
 
   return (
     <div className="flex min-w-0 flex-1 items-center justify-between gap-3">
@@ -41,9 +49,20 @@ export default function Header({ onMenuClick }) {
         </div>
       </div>
 
-      <p className="hidden shrink-0 rounded-lg bg-slate-700/60 px-3 py-1.5 text-xs text-slate-300 sm:block">
-        {formatted}
-      </p>
+      <div className="flex shrink-0 items-center gap-2">
+        {isSupabaseEnabled ? (
+          <button
+            type="button"
+            onClick={handleSignOut}
+            className="rounded-lg bg-slate-700/60 px-3 py-1.5 text-xs text-slate-300 hover:bg-slate-600 hover:text-slate-200"
+          >
+            Cerrar sesión
+          </button>
+        ) : null}
+        <p className="hidden rounded-lg bg-slate-700/60 px-3 py-1.5 text-xs text-slate-300 sm:block">
+          {formatted}
+        </p>
+      </div>
     </div>
   );
 }
