@@ -47,9 +47,11 @@ export async function getReservations() {
     const { data, error } = await supabase
       .from("reservations")
       .select("*")
-      .eq("hotel_id", HOTEL_ID)
       .order("check_in", { ascending: false });
-    if (error) throw new Error(error.message);
+    if (error) {
+      console.error("[reservations.service] Supabase error:", error);
+      throw new Error(error.message || "Error al cargar reservas");
+    }
     return (data ?? []).map(rowToReservation);
   }
   return reservationsMemory;

@@ -9,6 +9,7 @@ import { RoomQuickView } from "../components/RoomQuickView";
 import { formatDateShort } from "../utils/formatDate";
 import { PageLoader } from "../components/Spinner";
 import { isoTodayLocal } from "../utils/date";
+import { useAuth } from "../contexts/AuthContext";
 
 const DAYS_TO_SHOW = 7;
 const VIEW_WEEK = "week";
@@ -16,23 +17,29 @@ const VIEW_MONTH = "month";
 
 export default function Calendar() {
   const navigate = useNavigate();
+  const { isSupabaseEnabled, session } = useAuth();
   const [reservations, setReservations] = useState([]);
   const [rooms, setRooms] = useState([]);
   const [guests, setGuests] = useState([]);
   const [quickViewRoom, setQuickViewRoom] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState(null);
   const [viewMode, setViewMode] = useState(VIEW_WEEK);
   const [monthDate, setMonthDate] = useState(() => new Date());
+  const canFetch = !isSupabaseEnabled || Boolean(session);
 
   useEffect(() => {
+    if (!canFetch) return;
+    setLoadError(null);
     Promise.all([getReservations(), getRooms(), getGuests()])
       .then(([res, rms, g]) => {
         setReservations(res);
         setRooms(rms);
         setGuests(g);
       })
+      .catch((err) => setLoadError(err?.message ?? "Error al cargar"))
       .finally(() => setLoading(false));
-  }, []);
+  }, [canFetch]);
 
   async function handleUpdateRoom(roomId, patch) {
     await updateRoom(roomId, patch);
@@ -105,6 +112,14 @@ export default function Calendar() {
   const todayIso = isoTodayLocal();
 
   if (loading) return <PageLoader />;
+  if (loadError) {
+    return (
+      <div className="rounded-xl border border-red-500/50 bg-red-500/10 p-4 text-red-300">
+        <p className="font-medium">Error al cargar</p>
+        <p className="mt-1 text-sm">{loadError}</p>
+      </div>
+    );
+  }
 
   function navPrev() {
     if (viewMode === VIEW_MONTH) {

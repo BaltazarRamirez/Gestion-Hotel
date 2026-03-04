@@ -12,23 +12,33 @@ import {
 } from "recharts";
 import { getReservations } from "../services/reservations.service";
 import { getRooms } from "../services/rooms.service";
+import { useAuth } from "../contexts/AuthContext";
 import { PageLoader } from "../components/Spinner";
 import { RESERVATION_STATUS, ROOM_STATUS, isActiveReservationStatus } from "../constants/statuses";
 import { isoTodayLocal } from "../utils/date";
 
 export default function Dashboard() {
+  const { isSupabaseEnabled, session } = useAuth();
   const [reservations, setReservations] = useState([]);
   const [rooms, setRooms] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+
+  const canFetch = !isSupabaseEnabled || Boolean(session);
 
   useEffect(() => {
+    if (!canFetch) return;
+    setError(null);
     Promise.all([getReservations(), getRooms()])
       .then(([res, rms]) => {
         setReservations(res);
         setRooms(rms);
       })
+      .catch((err) => {
+        setError(err?.message ?? "Error al cargar datos");
+      })
       .finally(() => setLoading(false));
-  }, []);
+  }, [canFetch]);
 
   // Usamos fecha local para que "hoy" no dependa de UTC.
   const today = isoTodayLocal();
@@ -187,6 +197,18 @@ export default function Dashboard() {
   }, [rooms, reservations]);
 
   if (loading) return <PageLoader />;
+  if (error) {
+    return (
+      <div className="rounded-xl border border-red-500/50 bg-red-500/10 p-4 text-red-300">
+        <p className="font-medium">Error al cargar los datos</p>
+        <p className="mt-1 text-sm">{error}</p>
+        <p className="mt-2 text-xs text-slate-400">
+          Si acabás de activar el login, ejecutá en Supabase (SQL Editor) el archivo{" "}
+          <code className="rounded bg-slate-700 px-1">supabase/migrations/002_rls_authenticated.sql</code>.
+        </p>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-4 md:space-y-6">

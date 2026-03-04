@@ -45,9 +45,11 @@ export async function getRooms() {
     const { data, error } = await supabase
       .from("rooms")
       .select("*")
-      .eq("hotel_id", HOTEL_ID)
       .order("number");
-    if (error) throw new Error(error.message);
+    if (error) {
+      console.error("[rooms.service] Supabase error:", error);
+      throw new Error(error.message || "Error al cargar habitaciones");
+    }
     return (data ?? []).map(rowToRoom);
   }
   return roomsMemory;

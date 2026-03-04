@@ -14,6 +14,7 @@ import {
 import { getGuests } from "../services/guests.service";
 import { getReservations, updateReservation } from "../services/reservations.service";
 import { createRoom, deleteRoom, getRooms, updateRoom } from "../services/rooms.service";
+import { useAuth } from "../contexts/AuthContext";
 
 function CreateRoomModal({
   open,
@@ -118,10 +119,12 @@ function CreateRoomModal({
 }
 
 export default function Rooms() {
+  const { isSupabaseEnabled, session } = useAuth();
   const [rooms, setRooms] = useState([]);
   const [reservations, setReservations] = useState([]);
   const [guests, setGuests] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState(null);
 
   const [query, setQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState("All");
@@ -134,16 +137,20 @@ export default function Rooms() {
   const [quickViewRoom, setQuickViewRoom] = useState(null);
 
   const [toast, setToast] = useState(null);
+  const canFetch = !isSupabaseEnabled || Boolean(session);
 
   useEffect(() => {
+    if (!canFetch) return;
+    setLoadError(null);
     Promise.all([getRooms(), getReservations(), getGuests()])
       .then(([rms, res, g]) => {
         setRooms(rms);
         setReservations(res);
         setGuests(g);
       })
+      .catch((err) => setLoadError(err?.message ?? "Error al cargar"))
       .finally(() => setLoading(false));
-  }, []);
+  }, [canFetch]);
 
   useEffect(() => {
     if (!toast) return;
@@ -230,6 +237,14 @@ export default function Rooms() {
   }
 
   if (loading) return <PageLoader />;
+  if (loadError) {
+    return (
+      <div className="rounded-xl border border-red-500/50 bg-red-500/10 p-4 text-red-300">
+        <p className="font-medium">Error al cargar</p>
+        <p className="mt-1 text-sm">{loadError}</p>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">

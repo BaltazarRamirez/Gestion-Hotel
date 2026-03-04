@@ -34,10 +34,15 @@ export default function AppLayout() {
           sidebarOpen ? "translate-x-0" : "-translate-x-full"
         }`}
       >
-        <div className="mb-4 flex items-center justify-between md:mb-6">
-          <h2 className="text-lg font-semibold tracking-tight text-slate-100">
-            Hotel Totem
-          </h2>
+        <div className="mb-4 flex items-center justify-center
+         md:mb-6">
+        <img
+          src="/hotelus-logo.png"
+          alt="Hotelus"
+          className="h-16 w-auto object-contain md:h-20 scale-200"
+          width={200}
+          height={80}
+        />
           <button
             type="button"
             onClick={() => setSidebarOpen(false)}
@@ -70,13 +75,7 @@ export default function AppLayout() {
           ))}
         </nav>
 
-        <img
-          src="/hotelus-logo.png"
-          alt="Hotelus"
-          className="h-16 w-auto object-contain md:h-20 scale-200"
-          width={200}
-          height={80}
-        />
+        
         <p
           className={`mt-2 rounded-lg px-2 py-1 text-[10px] font-medium ${
             isSupabaseEnabled
