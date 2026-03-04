@@ -1,56 +1,20 @@
 import { useEffect, useMemo, useState } from "react";
-import { createGuest, deleteGuest, getGuests, updateGuest } from "../services/guests.service";
-
-function Modal({ open, title, children, onClose }) {
-  if (!open) return null;
-
-  return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-      <div className="absolute inset-0 bg-black/40" onClick={onClose} />
-      <div className="relative w-full max-w-lg rounded-2xl bg-white p-5 shadow-xl">
-        <div className="mb-4 flex items-center justify-between">
-          <h3 className="text-base font-semibold">{title}</h3>
-          <button onClick={onClose} className="rounded-lg px-2 py-1 text-sm hover:bg-gray-100">
-            ✕
-          </button>
-        </div>
-        {children}
-      </div>
-    </div>
-  );
-}
-
-function ConfirmModal({ open, title, description, onCancel, onConfirm }) {
-  if (!open) return null;
-
-  return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-      <div className="absolute inset-0 bg-black/40" onClick={onCancel} />
-      <div className="relative w-full max-w-md rounded-2xl bg-white p-5 shadow-xl">
-        <h3 className="text-base font-semibold">{title}</h3>
-        <p className="mt-2 text-sm text-gray-600">{description}</p>
-
-        <div className="mt-5 flex justify-end gap-2">
-          <button
-            onClick={onCancel}
-            className="rounded-xl border bg-white px-4 py-2 text-sm hover:bg-gray-50"
-          >
-            Cancelar
-          </button>
-          <button
-            onClick={onConfirm}
-            className="rounded-xl bg-red-600 px-4 py-2 text-sm font-medium text-white hover:bg-red-700"
-          >
-            Eliminar
-          </button>
-        </div>
-      </div>
-    </div>
-  );
-}
+import {
+  createGuest,
+  deleteGuest,
+  getGuests,
+  updateGuest,
+} from "../services/guests.service";
+import { getReservations } from "../services/reservations.service";
+import { getActiveReservationsForGuest } from "../constants/statuses";
+import { Modal } from "../components/Modal";
+import { ConfirmModal } from "../components/ConfirmModal";
+import { Toast } from "../components/Toast";
+import { PageLoader } from "../components/Spinner";
 
 export default function Guests() {
   const [guests, setGuests] = useState([]);
+  const [reservations, setReservations] = useState([]);
   const [query, setQuery] = useState("");
 
   const [open, setOpen] = useState(false);
@@ -59,10 +23,22 @@ export default function Guests() {
 
   const [error, setError] = useState("");
   const [form, setForm] = useState({ fullName: "", email: "", phone: "" });
+  const [toast, setToast] = useState(null);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    getGuests().then(setGuests);
+    Promise.all([getGuests(), getReservations()])
+      .then(([g, r]) => {
+        setGuests(g);
+        setReservations(r);
+      })
+      .finally(() => setLoading(false));
   }, []);
+  useEffect(() => {
+    if (!toast) return;
+    const t = setTimeout(() => setToast(null), 2500);
+    return () => clearTimeout(t);
+  }, [toast]);
 
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
@@ -97,7 +73,6 @@ export default function Guests() {
     if (!form.fullName.trim()) return setError("Falta el nombre completo");
     if (!form.email.trim()) return setError("Falta el email");
 
-    // Validación simple: email único
     const email = form.email.trim().toLowerCase();
     const exists = guests.some((g) => {
       if (editing && g.id === editing.id) return false;
@@ -105,91 +80,106 @@ export default function Guests() {
     });
     if (exists) return setError("Ya existe un huésped con ese email");
 
-    if (editing) {
-      const updated = await updateGuest(editing.id, form);
-      setGuests((prev) => prev.map((g) => (g.id === editing.id ? updated : g)));
-    } else {
-      const created = await createGuest(form);
-      setGuests((prev) => [created, ...prev]);
+    try {
+      if (editing) {
+        const updated = await updateGuest(editing.id, form);
+        setGuests((prev) => prev.map((g) => (g.id === editing.id ? updated : g)));
+        setToast({ message: "Huésped actualizado", type: "success" });
+      } else {
+        const created = await createGuest(form);
+        setGuests((prev) => [created, ...prev]);
+        setToast({ message: "Huésped creado", type: "success" });
+      }
+      setOpen(false);
+      setEditing(null);
+    } catch (err) {
+      setError(err?.message ?? "Error al guardar");
+      setToast({ message: err?.message ?? "Error al guardar", type: "error" });
     }
-
-    setOpen(false);
-    setEditing(null);
   }
+
+  const blockDeleteGuest =
+    deleting &&
+    getActiveReservationsForGuest(deleting.id, reservations).length > 0;
 
   async function confirmDelete() {
     if (!deleting) return;
-    await deleteGuest(deleting.id);
-    setGuests((prev) => prev.filter((g) => g.id !== deleting.id));
-    setDeleting(null);
+    const active = getActiveReservationsForGuest(deleting.id, reservations);
+    if (active.length > 0) {
+      setDeleting(null);
+      return;
+    }
+    try {
+      await deleteGuest(deleting.id);
+      setGuests((prev) => prev.filter((g) => g.id !== deleting.id));
+      setDeleting(null);
+      setToast({ message: "Huésped eliminado", type: "success" });
+    } catch (err) {
+      setToast({ message: err?.message ?? "Error al eliminar", type: "error" });
+      setDeleting(null);
+    }
   }
+
+  if (loading) return <PageLoader />;
 
   return (
     <div className="space-y-6">
-      {/* Header */}
       <div className="flex flex-col gap-3 md:flex-row md:items-end md:justify-between">
         <div>
-          <h2 className="text-xl font-semibold">Huéspedes</h2>
-          <p className="text-sm text-gray-500">Gestiona la información de huéspedes</p>
-          <p className="mt-1 text-xs text-gray-400">{filtered.length} huésped(es)</p>
+          <h2 className="text-xl font-semibold text-slate-100">Huéspedes</h2>
+          <p className="text-sm text-slate-400">Gestiona la información de huéspedes</p>
+          <p className="mt-1 text-xs text-slate-500">{filtered.length} huésped(es)</p>
         </div>
-
         <button
           onClick={openCreate}
-          className="rounded-xl bg-black px-4 py-2 text-sm font-medium text-white hover:bg-black/90"
+          className="rounded-xl bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-500"
         >
           + Nuevo huésped
         </button>
       </div>
-
-      {/* Search */}
-      <div className="rounded-2xl border bg-white p-3">
+      <div className="rounded-2xl border border-slate-700 bg-slate-800/80 p-3">
         <input
           value={query}
           onChange={(e) => setQuery(e.target.value)}
           placeholder="Buscar por nombre, email o teléfono..."
-          className="w-full rounded-xl border px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-black/10"
+          className="w-full rounded-xl border border-slate-600 bg-slate-700 px-3 py-2 text-sm text-slate-100 placeholder-slate-500 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/40"
         />
       </div>
-
-      {/* Table */}
-      <div className="overflow-hidden rounded-2xl border bg-white">
-        <table className="w-full text-sm">
-          <thead className="border-b bg-gray-50">
+      <div className="overflow-x-auto rounded-2xl border border-slate-700 bg-slate-800/80">
+        <table className="w-full min-w-[500px] text-sm">
+          <thead className="border-b border-slate-700 bg-slate-800">
             <tr>
-              <th className="px-4 py-3 text-left font-medium">Nombre</th>
-              <th className="px-4 py-3 text-left font-medium">Email</th>
-              <th className="px-4 py-3 text-left font-medium">Teléfono</th>
-              <th className="px-4 py-3 text-left font-medium">Acciones</th>
+              <th className="px-4 py-3 text-left font-medium text-slate-300">Nombre</th>
+              <th className="px-4 py-3 text-left font-medium text-slate-300">Email</th>
+              <th className="px-4 py-3 text-left font-medium text-slate-300">Teléfono</th>
+              <th className="px-4 py-3 text-left font-medium text-slate-300">Acciones</th>
             </tr>
           </thead>
-
           <tbody>
             {filtered.map((g) => (
-              <tr key={g.id} className="border-b last:border-0 hover:bg-gray-50/70">
-                <td className="px-4 py-3 font-medium">{g.fullName}</td>
-                <td className="px-4 py-3">{g.email}</td>
-                <td className="px-4 py-3">{g.phone}</td>
-                <td className="px-4 py-3 whitespace-nowrap space-x-2">
+              <tr key={g.id} className="border-b border-slate-700/80 last:border-0 hover:bg-slate-700/30">
+                <td className="px-4 py-3 font-medium text-slate-100">{g.fullName}</td>
+                <td className="px-4 py-3 text-slate-300">{g.email}</td>
+                <td className="px-4 py-3 text-slate-300">{g.phone}</td>
+                <td className="whitespace-nowrap space-x-2 px-4 py-3">
                   <button
                     onClick={() => openEdit(g)}
-                    className="rounded-lg px-2 py-1 text-xs hover:bg-gray-100"
+                    className="rounded-lg bg-blue-600/80 px-2 py-1 text-xs text-white hover:bg-blue-500"
                   >
                     Editar
                   </button>
                   <button
                     onClick={() => setDeleting(g)}
-                    className="rounded-lg px-2 py-1 text-xs hover:bg-gray-100"
+                    className="rounded-lg bg-red-600/80 px-2 py-1 text-xs text-white hover:bg-red-500"
                   >
                     Eliminar
                   </button>
                 </td>
               </tr>
             ))}
-
             {filtered.length === 0 && (
               <tr>
-                <td colSpan={4} className="px-4 py-8 text-center text-sm text-gray-500">
+                <td colSpan={4} className="px-4 py-8 text-center text-sm text-slate-500">
                   No hay huéspedes.
                 </td>
               </tr>
@@ -208,42 +198,38 @@ export default function Guests() {
         }}
       >
         {error ? (
-          <div className="mb-3 rounded-xl border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">
+          <div className="mb-3 rounded-xl border border-red-500/50 bg-red-500/10 px-3 py-2 text-sm text-red-300">
             {error}
           </div>
         ) : null}
-
         <form className="space-y-3" onSubmit={handleSubmit}>
           <label className="space-y-1">
-            <span className="text-xs text-gray-600">Nombre completo</span>
+            <span className="text-xs text-slate-400">Nombre completo</span>
             <input
               value={form.fullName}
               onChange={(e) => setForm((p) => ({ ...p, fullName: e.target.value }))}
-              className="w-full rounded-xl border px-3 py-2 text-sm"
+              className="w-full rounded-xl border border-slate-600 bg-slate-700 px-3 py-2 text-sm text-slate-100 placeholder-slate-500 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/40"
               placeholder="Ej: Juan Pérez"
             />
           </label>
-
           <label className="space-y-1">
-            <span className="text-xs text-gray-600">Email</span>
+            <span className="text-xs text-slate-400">Email</span>
             <input
               value={form.email}
               onChange={(e) => setForm((p) => ({ ...p, email: e.target.value }))}
-              className="w-full rounded-xl border px-3 py-2 text-sm"
+              className="w-full rounded-xl border border-slate-600 bg-slate-700 px-3 py-2 text-sm text-slate-100 placeholder-slate-500 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/40"
               placeholder="juan@mail.com"
             />
           </label>
-
           <label className="space-y-1">
-            <span className="text-xs text-gray-600">Teléfono</span>
+            <span className="text-xs text-slate-400">Teléfono</span>
             <input
               value={form.phone}
               onChange={(e) => setForm((p) => ({ ...p, phone: e.target.value }))}
-              className="w-full rounded-xl border px-3 py-2 text-sm"
+              className="w-full rounded-xl border border-slate-600 bg-slate-700 px-3 py-2 text-sm text-slate-100 placeholder-slate-500 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/40"
               placeholder="+54 381 ..."
             />
           </label>
-
           <div className="flex justify-end gap-2 pt-2">
             <button
               type="button"
@@ -251,14 +237,13 @@ export default function Guests() {
                 setOpen(false);
                 setEditing(null);
               }}
-              className="rounded-xl border bg-white px-4 py-2 text-sm hover:bg-gray-50"
+              className="rounded-xl border border-slate-600 bg-slate-700 px-4 py-2 text-sm text-slate-200 hover:bg-slate-600"
             >
               Cancelar
             </button>
-
             <button
               type="submit"
-              className="rounded-xl bg-black px-4 py-2 text-sm font-medium text-white hover:bg-black/90"
+              className="rounded-xl bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-500"
             >
               Guardar
             </button>
@@ -271,11 +256,23 @@ export default function Guests() {
         open={Boolean(deleting)}
         title="Eliminar huésped"
         description={
-          deleting ? `¿Seguro que querés eliminar a ${deleting.fullName}?` : ""
+          deleting
+            ? blockDeleteGuest
+              ? `${deleting.fullName} tiene reservas activas. Cancelá las reservas antes de eliminarlo.`
+              : `¿Seguro que querés eliminar a ${deleting.fullName}?`
+            : ""
         }
+        confirmLabel={blockDeleteGuest ? "Cerrar" : "Eliminar"}
         onCancel={() => setDeleting(null)}
         onConfirm={confirmDelete}
       />
+      {toast && (
+        <Toast
+          message={toast.message}
+          type={toast.type}
+          onClose={() => setToast(null)}
+        />
+      )}
     </div>
   );
 }
