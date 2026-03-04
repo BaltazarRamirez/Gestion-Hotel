@@ -1,89 +1,108 @@
+import { useState } from "react";
 import { Outlet, NavLink } from "react-router-dom";
 import Header from "../components/Header";
-import Sidebar from "../components/Sidebar";
+import { isSupabaseEnabled } from "../lib/supabase";
+
+const navItems = [
+  { to: "/dashboard", label: "Dashboard" },
+  { to: "/rooms", label: "Habitaciones" },
+  { to: "/reservations", label: "Reservas" },
+  { to: "/guests", label: "Huéspedes" },
+  { to: "/calendar", label: "Calendario" },
+];
 
 export default function AppLayout() {
+  const [sidebarOpen, setSidebarOpen] = useState(false);
+
   return (
-    <div style={styles.container}>
-      
-      {/* SIDEBAR */}
-      <aside style={styles.sidebar}>
-        <h2 style={styles.logo}>Hotel Totem</h2>
+    <div className="flex min-h-screen bg-slate-900">
+      {/* Backdrop móvil: fondo oscuro bien visible cuando el menú está abierto */}
+      <div
+        className="no-print fixed inset-0 z-40 bg-black/80 md:hidden"
+        aria-hidden={!sidebarOpen}
+        style={{
+          pointerEvents: sidebarOpen ? "auto" : "none",
+          opacity: sidebarOpen ? 1 : 0,
+          transition: "opacity 0.2s ease-out",
+        }}
+        onClick={() => setSidebarOpen(false)}
+      />
 
-        <nav style={styles.nav}>
-          <NavLink to="/dashboard" style={styles.link}>
-            Dashboard
-          </NavLink>
+      {/* SIDEBAR: drawer en móvil, columna fija en md+ */}
+      <aside
+        className={`no-print fixed inset-y-0 left-0 z-50 flex w-64 flex-col border-r border-slate-700/80 bg-slate-900 px-4 py-5 transition-transform duration-200 ease-out md:z-0 md:w-[240px] md:translate-x-0 md:px-5 md:py-6 ${
+          sidebarOpen ? "translate-x-0" : "-translate-x-full"
+        }`}
+      >
+        <div className="mb-4 flex items-center justify-center
+         md:mb-6">
+        <img
+          src="/hotelus-logo.png"
+          alt="Hotelus"
+          className="h-16 w-auto object-contain md:h-20 scale-200"
+          width={200}
+          height={80}
+        />
+          <button
+            type="button"
+            onClick={() => setSidebarOpen(false)}
+            className="rounded-lg p-2 text-slate-400 hover:bg-slate-800 hover:text-slate-200 md:hidden"
+            aria-label="Cerrar menú"
+          >
+            <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </button>
+        </div>
 
-          <NavLink to="/rooms" style={styles.link}>
-            Rooms
-          </NavLink>
-
-          <NavLink to="/reservations" style={styles.link}>
-            Reservations
-          </NavLink>
-
-          <NavLink to="/guests" style={styles.link}>
-            Guests
-          </NavLink>
+        <nav className="flex flex-1 flex-col gap-1 text-sm">
+          {navItems.map((item) => (
+            <NavLink
+              key={item.to}
+              to={item.to}
+              onClick={() => setSidebarOpen(false)}
+              className={({ isActive }) =>
+                [
+                  "rounded-xl px-3 py-2.5 text-sm transition-colors",
+                  isActive
+                    ? "bg-blue-600 text-white shadow-lg shadow-blue-600/25"
+                    : "text-slate-400 hover:bg-slate-800 hover:text-slate-200",
+                ].join(" ")
+              }
+            >
+              {item.label}
+            </NavLink>
+          ))}
         </nav>
+
+        
+        <p
+          className={`mt-2 rounded-lg px-2 py-1 text-[10px] font-medium ${
+            isSupabaseEnabled
+              ? "bg-emerald-500/20 text-emerald-400"
+              : "bg-amber-500/20 text-amber-400"
+          }`}
+          title={
+            isSupabaseEnabled
+              ? "Los datos se guardan en Supabase"
+              : "Datos en memoria"
+          }
+        >
+          {isSupabaseEnabled ? "● Conectado" : "○ Datos en memoria"}
+        </p>
       </aside>
 
       {/* CONTENT */}
-      <div style={styles.content}>
-        
-        <header style={styles.header}>
-          <Header />
+      <div className="flex min-w-0 flex-1 flex-col bg-slate-900 md:ml-[240px]">
+        <header className="no-print border-b border-slate-700/80 bg-slate-800/50 px-4 py-3 md:px-6 md:py-4">
+          <Header onMenuClick={() => setSidebarOpen(true)} />
         </header>
 
-        <main style={styles.main}>
+        <main className="flex-1 p-4 md:p-6">
           <Outlet />
         </main>
-
       </div>
-
     </div>
   );
 }
 
-const styles = {
-  container: {
-    display: "grid",
-    gridTemplateColumns: "240px 1fr",
-    minHeight: "100vh",
-  },
-
-  sidebar: {
-    borderRight: "1px solid #eee",
-    padding: "20px",
-  },
-
-  logo: {
-    marginBottom: "30px",
-  },
-
-  nav: {
-    display: "flex",
-    flexDirection: "column",
-    gap: "10px",
-  },
-
-  link: {
-    textDecoration: "none",
-    color: "#333",
-  },
-
-  content: {
-    display: "flex",
-    flexDirection: "column",
-  },
-
-  header: {
-    borderBottom: "1px solid #eee",
-    padding: "16px",
-  },
-
-  main: {
-    padding: "24px",
-  },
-};
