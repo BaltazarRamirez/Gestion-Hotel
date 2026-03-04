@@ -1,1 +1,62 @@
 @import "tailwindcss";
+
+/* Tema oscuro + acentos azules */
+:root {
+  --pms-bg: 15 23 42;
+  --pms-panel: 30 41 59;
+  --pms-border: 51 65 85;
+  --pms-accent: 59 130 246;
+  --pms-accent-hover: 96 165 250;
+}
+
+/* Inputs y selects en paneles oscuros */
+.bg-slate-800 input:not([type="submit"]):not([type="button"]),
+.bg-slate-800 select,
+.bg-slate-800 textarea {
+  background-color: rgb(51 65 85);
+  border-color: rgb(71 85 105);
+  color: rgb(241 245 249);
+}
+.bg-slate-800 input::placeholder,
+.bg-slate-800 textarea::placeholder {
+  color: rgb(100 116 139);
+}
+.bg-slate-800 input:focus,
+.bg-slate-800 select:focus,
+.bg-slate-800 textarea:focus {
+  outline: none;
+  box-shadow: 0 0 0 2px rgb(59 130 246 / 0.4);
+  border-color: rgb(59 130 246);
+}
+.bg-slate-800 select option {
+  background-color: rgb(30 41 59);
+  color: rgb(241 245 249);
+}
+
+/* Animación barra de carga (splash) */
+@keyframes loading-bar {
+  0%,
+  100% {
+    width: 20%;
+    margin-left: 0;
+  }
+  50% {
+    width: 80%;
+    margin-left: 10%;
+  }
+}
+.animate-loading-bar {
+  animation: loading-bar 1.2s ease-in-out infinite;
+}
+
+@media print {
+  .no-print {
+    display: none !important;
+  }
+  body {
+    background: white;
+  }
+  .print\:block {
+    display: block !important;
+  }
+}
