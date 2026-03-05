@@ -1,4 +1,5 @@
 import { supabase, isSupabaseEnabled } from "../lib/supabase";
+import { getCurrentHotelId } from "../lib/currentHotel";
 import { guests as seed } from "../data/guests";
 import { HOTEL_ID, STORAGE_KEYS } from "../constants/app";
 import { readJson, writeJson } from "./localStore";
@@ -31,9 +32,11 @@ function rowToGuest(row) {
 
 export async function getGuests() {
   if (isSupabaseEnabled) {
+    const hotelId = getCurrentHotelId();
     const { data, error } = await supabase
       .from("guests")
       .select("*")
+      .eq("hotel_id", hotelId)
       .order("full_name");
     if (error) {
       console.error("[guests.service] Supabase error:", error);
@@ -49,7 +52,7 @@ export async function createGuest(values) {
     const { data, error } = await supabase
       .from("guests")
       .insert({
-        hotel_id: HOTEL_ID,
+        hotel_id: getCurrentHotelId(),
         full_name: values.fullName,
         email: values.email,
         phone: values.phone ?? "",
@@ -84,7 +87,7 @@ export async function updateGuest(id, patch) {
       .from("guests")
       .update(payload)
       .eq("id", id)
-      .eq("hotel_id", HOTEL_ID)
+      .eq("hotel_id", getCurrentHotelId())
       .select()
       .single();
     if (error) throw new Error(error.message);
@@ -103,7 +106,7 @@ export async function deleteGuest(id) {
       .from("guests")
       .delete()
       .eq("id", id)
-      .eq("hotel_id", HOTEL_ID);
+      .eq("hotel_id", getCurrentHotelId());
     if (error) throw new Error(error.message);
     return true;
   }

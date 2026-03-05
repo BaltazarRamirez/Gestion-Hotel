@@ -1,4 +1,5 @@
 import { supabase, isSupabaseEnabled } from "../lib/supabase";
+import { getCurrentHotelId } from "../lib/currentHotel";
 import { rooms as seedRooms } from "../data/rooms";
 import { DEFAULT_CURRENCY, HOTEL_ID, STORAGE_KEYS } from "../constants/app";
 import { readJson, writeJson } from "./localStore";
@@ -42,9 +43,11 @@ function rowToRoom(row) {
 
 export async function getRooms() {
   if (isSupabaseEnabled) {
+    const hotelId = getCurrentHotelId();
     const { data, error } = await supabase
       .from("rooms")
       .select("*")
+      .eq("hotel_id", hotelId)
       .order("number");
     if (error) {
       console.error("[rooms.service] Supabase error:", error);
@@ -60,7 +63,7 @@ export async function createRoom(newRoom) {
     const { data, error } = await supabase
       .from("rooms")
       .insert({
-        hotel_id: HOTEL_ID,
+        hotel_id: getCurrentHotelId(),
         number: newRoom.number,
         type: newRoom.type ?? "Simple",
         status: newRoom.status ?? "Disponible",
@@ -98,7 +101,7 @@ export async function updateRoom(id, patch) {
       .from("rooms")
       .update(payload)
       .eq("id", id)
-      .eq("hotel_id", HOTEL_ID)
+      .eq("hotel_id", getCurrentHotelId())
       .select()
       .single();
     if (error) throw new Error(error.message);
@@ -123,7 +126,7 @@ export async function deleteRoom(id) {
       .from("rooms")
       .delete()
       .eq("id", id)
-      .eq("hotel_id", HOTEL_ID);
+      .eq("hotel_id", getCurrentHotelId());
     if (error) throw new Error(error.message);
     return true;
   }
