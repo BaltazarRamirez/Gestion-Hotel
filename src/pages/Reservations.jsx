@@ -17,7 +17,7 @@ import { useAuth } from "../contexts/AuthContext";
 
 export default function Reservations() {
   const location = useLocation();
-  const { isSupabaseEnabled, session } = useAuth();
+  const { isSupabaseEnabled, session, profileLoaded } = useAuth();
   const today = isoTodayLocal();
   const [reservations, setReservations] = useState([]);
   const [query, setQuery] = useState("");
@@ -44,7 +44,7 @@ export default function Reservations() {
     status: "Confirmed",
   });
   const [loading, setLoading] = useState(true);
-  const canFetch = !isSupabaseEnabled || Boolean(session);
+  const canFetch = !isSupabaseEnabled || (Boolean(session) && profileLoaded);
 
   useEffect(() => {
     if (!canFetch) return;
