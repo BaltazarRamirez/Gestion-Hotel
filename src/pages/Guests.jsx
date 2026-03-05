@@ -14,7 +14,7 @@ import { PageLoader } from "../components/Spinner";
 import { useAuth } from "../contexts/AuthContext";
 
 export default function Guests() {
-  const { isSupabaseEnabled, session } = useAuth();
+  const { isSupabaseEnabled, session, profileLoaded } = useAuth();
   const [guests, setGuests] = useState([]);
   const [reservations, setReservations] = useState([]);
   const [query, setQuery] = useState("");
@@ -28,7 +28,7 @@ export default function Guests() {
   const [toast, setToast] = useState(null);
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState(null);
-  const canFetch = !isSupabaseEnabled || Boolean(session);
+  const canFetch = !isSupabaseEnabled || (Boolean(session) && profileLoaded);
 
   useEffect(() => {
     if (!canFetch) return;
