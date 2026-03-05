@@ -18,13 +18,13 @@ import { RESERVATION_STATUS, ROOM_STATUS, isActiveReservationStatus } from "../c
 import { isoTodayLocal } from "../utils/date";
 
 export default function Dashboard() {
-  const { isSupabaseEnabled, session } = useAuth();
+  const { isSupabaseEnabled, session, profileLoaded } = useAuth();
   const [reservations, setReservations] = useState([]);
   const [rooms, setRooms] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
-  const canFetch = !isSupabaseEnabled || Boolean(session);
+  const canFetch = !isSupabaseEnabled || (Boolean(session) && profileLoaded);
 
   useEffect(() => {
     if (!canFetch) return;
@@ -83,18 +83,21 @@ export default function Dashboard() {
     }
 
     const checkOutDate = (r) => (r.checkOut || "").slice(0, 10);
+    // Solo contar check-out como ingreso si NO pagó en check-in (si pagó en check-in ya se sumó ahí)
     const checkedOutToday = reservations.filter(
       (r) =>
         r.status === RESERVATION_STATUS.CheckedOut &&
-        checkOutDate(r) === today
+        checkOutDate(r) === today &&
+        !r.paidAtCheckIn
     );
     const checkedOutThisMonth = reservations.filter(
       (r) =>
         r.status === RESERVATION_STATUS.CheckedOut &&
-        checkOutDate(r).startsWith(thisMonth)
+        checkOutDate(r).startsWith(thisMonth) &&
+        !r.paidAtCheckIn
     );
 
-    // Ingresos por check-out (día/mes) + por check-in pagado en ese día/mes
+    // Ingresos por check-in pagado en ese día/mes (no se vuelve a sumar al hacer check-out)
     const paidCheckInToday = reservations.filter(
       (r) =>
         r.paidAtCheckIn &&
