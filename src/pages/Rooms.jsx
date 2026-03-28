@@ -119,7 +119,7 @@ function CreateRoomModal({
 }
 
 export default function Rooms() {
-  const { isSupabaseEnabled, session } = useAuth();
+  const { isSupabaseEnabled, session, profileLoaded } = useAuth();
   const [rooms, setRooms] = useState([]);
   const [reservations, setReservations] = useState([]);
   const [guests, setGuests] = useState([]);
@@ -137,7 +137,7 @@ export default function Rooms() {
   const [quickViewRoom, setQuickViewRoom] = useState(null);
 
   const [toast, setToast] = useState(null);
-  const canFetch = !isSupabaseEnabled || Boolean(session);
+  const canFetch = !isSupabaseEnabled || (Boolean(session) && profileLoaded);
 
   useEffect(() => {
     if (!canFetch) return;

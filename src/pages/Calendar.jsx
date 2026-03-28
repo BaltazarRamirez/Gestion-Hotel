@@ -17,7 +17,7 @@ const VIEW_MONTH = "month";
 
 export default function Calendar() {
   const navigate = useNavigate();
-  const { isSupabaseEnabled, session } = useAuth();
+  const { isSupabaseEnabled, session, profileLoaded } = useAuth();
   const [reservations, setReservations] = useState([]);
   const [rooms, setRooms] = useState([]);
   const [guests, setGuests] = useState([]);
@@ -26,7 +26,7 @@ export default function Calendar() {
   const [loadError, setLoadError] = useState(null);
   const [viewMode, setViewMode] = useState(VIEW_WEEK);
   const [monthDate, setMonthDate] = useState(() => new Date());
-  const canFetch = !isSupabaseEnabled || Boolean(session);
+  const canFetch = !isSupabaseEnabled || (Boolean(session) && profileLoaded);
 
   useEffect(() => {
     if (!canFetch) return;
