@@ -6,17 +6,11 @@ import { isoTodayLocal } from "../utils/date";
 import {
   RESERVATION_STATUS,
   ROOM_STATUS,
-  isActiveReservationStatus,
 } from "../constants/statuses";
-
-function getCurrentReservation(reservations, roomId, todayIso) {
-  return reservations.find((r) => {
-    if (r.roomId !== roomId) return false;
-    if (!isActiveReservationStatus(r.status)) return false;
-    if (r.status === RESERVATION_STATUS.CheckedIn) return true;
-    return r.checkIn <= todayIso && todayIso < r.checkOut;
-  });
-}
+import {
+  getCurrentReservationForRoom,
+  roomStatusFromReservationStatus,
+} from "../lib/reservationBusinessRules";
 
 export function RoomQuickView({
   open,
@@ -37,8 +31,11 @@ export function RoomQuickView({
   }, [guests]);
 
   const currentRes = useMemo(
-    () => (room ? getCurrentReservation(reservations, room.id, todayIso) : null),
-    [reservations, room, todayIso]
+    () =>
+      room
+        ? getCurrentReservationForRoom(reservations, room.id, todayIso)
+        : null,
+    [reservations, room, todayIso],
   );
 
   const [checkInAskReservation, setCheckInAskReservation] = useState(null);
@@ -50,16 +47,16 @@ export function RoomQuickView({
     onClose();
   }
 
-  async function handleReservationStatus(reservationId, newStatus, extraPatch = {}) {
+  async function handleReservationStatus(
+    reservationId,
+    newStatus,
+    extraPatch = {},
+  ) {
     const patch = { ...extraPatch, status: newStatus };
     if (onUpdateReservation) await onUpdateReservation(reservationId, patch);
     if (onUpdateRoom) {
-      if (newStatus === RESERVATION_STATUS.CheckedIn)
-        await onUpdateRoom(room.id, { status: ROOM_STATUS.Ocupada });
-      if (newStatus === RESERVATION_STATUS.CheckedOut)
-        await onUpdateRoom(room.id, { status: ROOM_STATUS.Limpieza });
-      if (newStatus === RESERVATION_STATUS.Cancelled)
-        await onUpdateRoom(room.id, { status: ROOM_STATUS.Disponible });
+      const nextRoomStatus = roomStatusFromReservationStatus(newStatus);
+      if (nextRoomStatus) await onUpdateRoom(room.id, { status: nextRoomStatus });
     }
     setCheckInAskReservation(null);
     onClose();
@@ -71,9 +68,13 @@ export function RoomQuickView({
 
   async function confirmCheckIn(paidAtCheckIn) {
     if (!checkInAskReservation) return;
-    await handleReservationStatus(checkInAskReservation.id, RESERVATION_STATUS.CheckedIn, {
-      paidAtCheckIn,
-    });
+    await handleReservationStatus(
+      checkInAskReservation.id,
+      RESERVATION_STATUS.CheckedIn,
+      {
+        paidAtCheckIn,
+      },
+    );
   }
 
   return (
@@ -97,7 +98,8 @@ export function RoomQuickView({
                 {guestById.get(currentRes.guestId)?.fullName ?? "—"}
               </p>
               <p className="text-sm text-slate-400">
-                {formatDateShort(currentRes.checkIn)} → {formatDateShort(currentRes.checkOut)}
+                {formatDateShort(currentRes.checkIn)} →{" "}
+                {formatDateShort(currentRes.checkOut)}
               </p>
               <div className="mt-2 flex flex-wrap gap-2">
                 <StatusBadge status={currentRes.status} variant="reservation" />
@@ -125,7 +127,10 @@ export function RoomQuickView({
                     <button
                       type="button"
                       onClick={() =>
-                        handleReservationStatus(currentRes.id, RESERVATION_STATUS.Cancelled)
+                        handleReservationStatus(
+                          currentRes.id,
+                          RESERVATION_STATUS.Cancelled,
+                        )
                       }
                       className="rounded-lg bg-red-600/80 px-2 py-1 text-xs text-white hover:bg-red-500"
                     >
@@ -138,7 +143,10 @@ export function RoomQuickView({
                   <button
                     type="button"
                     onClick={() =>
-                      handleReservationStatus(currentRes.id, RESERVATION_STATUS.CheckedOut)
+                      handleReservationStatus(
+                        currentRes.id,
+                        RESERVATION_STATUS.CheckedOut,
+                      )
                     }
                     className="rounded-lg bg-slate-500/80 px-2 py-1 text-xs text-white hover:bg-slate-400"
                   >
@@ -164,7 +172,9 @@ export function RoomQuickView({
           )}
 
           <div className="flex flex-wrap gap-2 border-t border-slate-600 pt-3">
-            <span className="w-full text-xs text-slate-500">Estado de la habitación</span>
+            <span className="w-full text-xs text-slate-500">
+              Estado de la habitación
+            </span>
 
             {room.status === ROOM_STATUS.Limpieza && (
               <button
@@ -224,8 +234,8 @@ export function RoomQuickView({
         {checkInAskReservation ? (
           <div className="space-y-4">
             <p className="text-slate-200">
-              ¿El huésped ya pagó? Se mostrará como &quot;Pago&quot; o &quot;Pendiente de
-              pago&quot; y se sumará a ingresos si está pago.
+              ¿El huésped ya pagó? Se mostrará como &quot;Pago&quot; o
+              &quot;Pendiente de pago&quot; y se sumará a ingresos si está pago.
             </p>
             <div className="flex justify-end gap-2">
               <button
