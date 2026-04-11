@@ -6,17 +6,11 @@ import { isoTodayLocal } from "../utils/date";
 import {
   RESERVATION_STATUS,
   ROOM_STATUS,
-  isActiveReservationStatus,
 } from "../constants/statuses";
-
-function getCurrentReservation(reservations, roomId, todayIso) {
-  return reservations.find((r) => {
-    if (r.roomId !== roomId) return false;
-    if (!isActiveReservationStatus(r.status)) return false;
-    if (r.status === RESERVATION_STATUS.CheckedIn) return true;
-    return r.checkIn <= todayIso && todayIso < r.checkOut;
-  });
-}
+import {
+  getCurrentReservationForRoom,
+  roomStatusFromReservationStatus,
+} from "../lib/reservationBusinessRules";
 
 export function RoomQuickView({
   open,
@@ -37,8 +31,11 @@ export function RoomQuickView({
   }, [guests]);
 
   const currentRes = useMemo(
-    () => (room ? getCurrentReservation(reservations, room.id, todayIso) : null),
-    [reservations, room, todayIso]
+    () =>
+      room
+        ? getCurrentReservationForRoom(reservations, room.id, todayIso)
+        : null,
+    [reservations, room, todayIso],
   );
 
   const [checkInAskReservation, setCheckInAskReservation] = useState(null);
@@ -50,16 +47,16 @@ export function RoomQuickView({
     onClose();
   }
 
-  async function handleReservationStatus(reservationId, newStatus, extraPatch = {}) {
+  async function handleReservationStatus(
+    reservationId,
+    newStatus,
+    extraPatch = {},
+  ) {
     const patch = { ...extraPatch, status: newStatus };
     if (onUpdateReservation) await onUpdateReservation(reservationId, patch);
     if (onUpdateRoom) {
-      if (newStatus === RESERVATION_STATUS.CheckedIn)
-        await onUpdateRoom(room.id, { status: ROOM_STATUS.Ocupada });
-      if (newStatus === RESERVATION_STATUS.CheckedOut)
-        await onUpdateRoom(room.id, { status: ROOM_STATUS.Limpieza });
-      if (newStatus === RESERVATION_STATUS.Cancelled)
-        await onUpdateRoom(room.id, { status: ROOM_STATUS.Disponible });
+      const nextRoomStatus = roomStatusFromReservationStatus(newStatus);
+      if (nextRoomStatus) await onUpdateRoom(room.id, { status: nextRoomStatus });
     }
     setCheckInAskReservation(null);
     onClose();
@@ -71,9 +68,13 @@ export function RoomQuickView({
 
   async function confirmCheckIn(paidAtCheckIn) {
     if (!checkInAskReservation) return;
-    await handleReservationStatus(checkInAskReservation.id, RESERVATION_STATUS.CheckedIn, {
-      paidAtCheckIn,
-    });
+    await handleReservationStatus(
+      checkInAskReservation.id,
+      RESERVATION_STATUS.CheckedIn,
+      {
+        paidAtCheckIn,
+      },
+    );
   }
 
   return (
@@ -97,7 +98,8 @@ export function RoomQuickView({
                 {guestById.get(currentRes.guestId)?.fullName ?? "—"}
               </p>
               <p className="text-sm text-slate-400">
-                {formatDateShort(currentRes.checkIn)} → {formatDateShort(currentRes.checkOut)}
+                {formatDateShort(currentRes.checkIn)} →{" "}
+                {formatDateShort(currentRes.checkOut)}
               </p>
               <div className="mt-2 flex flex-wrap gap-2">
                 <StatusBadge status={currentRes.status} variant="reservation" />
@@ -118,16 +120,19 @@ export function RoomQuickView({
                     <button
                       type="button"
                       onClick={openCheckInAsk}
-                      className="rounded-lg bg-emerald-600/80 px-2 py-1 text-xs text-white hover:bg-emerald-500"
+                      className="action-btn action-btn-success action-btn-sm"
                     >
                       Check-in
                     </button>
                     <button
                       type="button"
                       onClick={() =>
-                        handleReservationStatus(currentRes.id, RESERVATION_STATUS.Cancelled)
+                        handleReservationStatus(
+                          currentRes.id,
+                          RESERVATION_STATUS.Cancelled,
+                        )
                       }
-                      className="rounded-lg bg-red-600/80 px-2 py-1 text-xs text-white hover:bg-red-500"
+                      className="action-btn action-btn-danger action-btn-sm"
                     >
                       Cancelar reserva
                     </button>
@@ -138,9 +143,12 @@ export function RoomQuickView({
                   <button
                     type="button"
                     onClick={() =>
-                      handleReservationStatus(currentRes.id, RESERVATION_STATUS.CheckedOut)
+                      handleReservationStatus(
+                        currentRes.id,
+                        RESERVATION_STATUS.CheckedOut,
+                      )
                     }
-                    className="rounded-lg bg-slate-500/80 px-2 py-1 text-xs text-white hover:bg-slate-400"
+                    className="action-btn action-btn-neutral action-btn-sm"
                   >
                     Check-out
                   </button>
@@ -150,7 +158,7 @@ export function RoomQuickView({
                   <button
                     type="button"
                     onClick={() => onViewReservation(currentRes)}
-                    className="rounded-lg bg-blue-600/80 px-2 py-1 text-xs text-white hover:bg-blue-500"
+                    className="action-btn action-btn-info action-btn-sm"
                   >
                     Ver detalle
                   </button>
@@ -164,13 +172,15 @@ export function RoomQuickView({
           )}
 
           <div className="flex flex-wrap gap-2 border-t border-slate-600 pt-3">
-            <span className="w-full text-xs text-slate-500">Estado de la habitación</span>
+            <span className="w-full text-xs text-slate-500">
+              Estado de la habitación
+            </span>
 
             {room.status === ROOM_STATUS.Limpieza && (
               <button
                 type="button"
                 onClick={() => handleStatusChange(ROOM_STATUS.Disponible)}
-                className="rounded-xl bg-emerald-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-emerald-500"
+                className="action-btn action-btn-success"
               >
                 Limpieza lista
               </button>
@@ -179,21 +189,21 @@ export function RoomQuickView({
             <button
               type="button"
               onClick={() => handleStatusChange(ROOM_STATUS.Disponible)}
-              className="rounded-xl border border-emerald-600/50 bg-emerald-600/20 px-3 py-1.5 text-sm text-emerald-300 hover:bg-emerald-600/40"
+              className="action-btn action-btn-success"
             >
               Disponible
             </button>
             <button
               type="button"
               onClick={() => handleStatusChange(ROOM_STATUS.Limpieza)}
-              className="rounded-xl border border-amber-600/50 bg-amber-600/20 px-3 py-1.5 text-sm text-amber-300 hover:bg-amber-600/40"
+              className="action-btn action-btn-warning"
             >
               En limpieza
             </button>
             <button
               type="button"
               onClick={() => handleStatusChange(ROOM_STATUS.Ocupada)}
-              className="rounded-xl border border-red-600/50 bg-red-600/20 px-3 py-1.5 text-sm text-red-300 hover:bg-red-600/40"
+              className="action-btn action-btn-danger"
             >
               Ocupada
             </button>
@@ -207,7 +217,7 @@ export function RoomQuickView({
                   onEditRoom(room);
                   onClose();
                 }}
-                className="rounded-xl bg-blue-600 px-3 py-1.5 text-sm text-white hover:bg-blue-500"
+                className="action-btn action-btn-info"
               >
                 Editar habitación
               </button>
@@ -224,28 +234,28 @@ export function RoomQuickView({
         {checkInAskReservation ? (
           <div className="space-y-4">
             <p className="text-slate-200">
-              ¿El huésped ya pagó? Se mostrará como &quot;Pago&quot; o &quot;Pendiente de
-              pago&quot; y se sumará a ingresos si está pago.
+              ¿El huésped ya pagó? Se mostrará como &quot;Pago&quot; o
+              &quot;Pendiente de pago&quot; y se sumará a ingresos si está pago.
             </p>
             <div className="flex justify-end gap-2">
               <button
                 type="button"
                 onClick={() => setCheckInAskReservation(null)}
-                className="rounded-xl border border-slate-600 bg-slate-700 px-4 py-2 text-sm text-slate-200 hover:bg-slate-600"
+                className="action-btn action-btn-neutral"
               >
                 Cancelar
               </button>
               <button
                 type="button"
                 onClick={() => confirmCheckIn(false)}
-                className="rounded-xl bg-amber-600 px-4 py-2 text-sm font-medium text-white hover:bg-amber-500"
+                className="action-btn action-btn-warning"
               >
                 No, pendiente
               </button>
               <button
                 type="button"
                 onClick={() => confirmCheckIn(true)}
-                className="rounded-xl bg-emerald-600 px-4 py-2 text-sm font-medium text-white hover:bg-emerald-500"
+                className="action-btn action-btn-success"
               >
                 Sí, está pago
               </button>

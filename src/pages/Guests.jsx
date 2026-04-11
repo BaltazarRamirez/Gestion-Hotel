@@ -14,7 +14,7 @@ import { PageLoader } from "../components/Spinner";
 import { useAuth } from "../contexts/AuthContext";
 
 export default function Guests() {
-  const { isSupabaseEnabled, session } = useAuth();
+  const { isSupabaseEnabled, session, profileLoaded } = useAuth();
   const [guests, setGuests] = useState([]);
   const [reservations, setReservations] = useState([]);
   const [query, setQuery] = useState("");
@@ -28,7 +28,7 @@ export default function Guests() {
   const [toast, setToast] = useState(null);
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState(null);
-  const canFetch = !isSupabaseEnabled || Boolean(session);
+  const canFetch = !isSupabaseEnabled || (Boolean(session) && profileLoaded);
 
   useEffect(() => {
     if (!canFetch) return;
@@ -148,7 +148,7 @@ export default function Guests() {
         </div>
         <button
           onClick={openCreate}
-          className="rounded-xl bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-500"
+          className="rounded-2xl border border-violet-400/35 bg-gradient-to-r from-violet-500/30 via-blue-500/20 to-cyan-500/15 px-4 py-2 text-sm font-medium text-white shadow-lg shadow-violet-900/20 backdrop-blur-sm transition-all duration-200 hover:-translate-y-0.5 hover:border-violet-300/40 hover:from-violet-500/38 hover:via-blue-500/24 hover:to-cyan-500/18 hover:shadow-violet-900/25"
         >
           + Nuevo huésped
         </button>
@@ -161,7 +161,7 @@ export default function Guests() {
           className="w-full rounded-xl border border-slate-600 bg-slate-700 px-3 py-2 text-sm text-slate-100 placeholder-slate-500 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/40"
         />
       </div>
-      <div className="overflow-x-auto rounded-2xl border border-slate-700 bg-slate-800/80">
+      <div className="app-scrollbar overflow-x-auto rounded-2xl border border-slate-700 bg-slate-800/80">
         <table className="w-full min-w-[500px] text-sm">
           <thead className="border-b border-slate-700 bg-slate-800">
             <tr>
@@ -180,13 +180,13 @@ export default function Guests() {
                 <td className="whitespace-nowrap space-x-2 px-4 py-3">
                   <button
                     onClick={() => openEdit(g)}
-                    className="rounded-lg bg-blue-600/80 px-2 py-1 text-xs text-white hover:bg-blue-500"
+                    className="action-btn action-btn-info action-btn-sm"
                   >
                     Editar
                   </button>
                   <button
                     onClick={() => setDeleting(g)}
-                    className="rounded-lg bg-red-600/80 px-2 py-1 text-xs text-white hover:bg-red-500"
+                    className="action-btn action-btn-danger action-btn-sm"
                   >
                     Eliminar
                   </button>
@@ -253,13 +253,13 @@ export default function Guests() {
                 setOpen(false);
                 setEditing(null);
               }}
-              className="rounded-xl border border-slate-600 bg-slate-700 px-4 py-2 text-sm text-slate-200 hover:bg-slate-600"
+              className="action-btn action-btn-neutral"
             >
               Cancelar
             </button>
             <button
               type="submit"
-              className="rounded-xl bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-500"
+              className="action-btn action-btn-info"
             >
               Guardar
             </button>

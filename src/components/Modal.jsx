@@ -38,7 +38,7 @@ export function Modal({ open, title, children, onClose }) {
             ✕
           </button>
         </div>
-        <div className="min-h-0 overflow-y-auto text-slate-200">{children}</div>
+        <div className="app-scrollbar min-h-0 overflow-y-auto text-slate-200">{children}</div>
       </div>
     </div>
   );

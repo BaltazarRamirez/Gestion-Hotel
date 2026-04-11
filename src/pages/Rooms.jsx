@@ -102,13 +102,13 @@ function CreateRoomModal({
           <button
             type="button"
             onClick={onCancel}
-            className="rounded-xl border border-slate-600 bg-slate-700 px-4 py-2 text-sm text-slate-200 hover:bg-slate-600"
+            className="action-btn action-btn-neutral"
           >
             Cancelar
           </button>
           <button
             type="submit"
-            className="rounded-xl bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-500"
+            className="action-btn action-btn-info"
           >
             Guardar
           </button>
@@ -119,7 +119,7 @@ function CreateRoomModal({
 }
 
 export default function Rooms() {
-  const { isSupabaseEnabled, session } = useAuth();
+  const { isSupabaseEnabled, session, profileLoaded } = useAuth();
   const [rooms, setRooms] = useState([]);
   const [reservations, setReservations] = useState([]);
   const [guests, setGuests] = useState([]);
@@ -137,7 +137,7 @@ export default function Rooms() {
   const [quickViewRoom, setQuickViewRoom] = useState(null);
 
   const [toast, setToast] = useState(null);
-  const canFetch = !isSupabaseEnabled || Boolean(session);
+  const canFetch = !isSupabaseEnabled || (Boolean(session) && profileLoaded);
 
   useEffect(() => {
     if (!canFetch) return;
@@ -258,7 +258,7 @@ export default function Rooms() {
         </div>
 
         <button
-          className="rounded-xl bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-500"
+          className="rounded-2xl border border-violet-400/35 bg-gradient-to-r from-violet-500/30 via-blue-500/20 to-cyan-500/15 px-4 py-2 text-sm font-medium text-white shadow-lg shadow-violet-900/20 backdrop-blur-sm transition-all duration-200 hover:-translate-y-0.5 hover:border-violet-300/40 hover:from-violet-500/38 hover:via-blue-500/24 hover:to-cyan-500/18 hover:shadow-violet-900/25"
           onClick={() => {
             setFormError("");
             setEditingRoom(null);
@@ -281,7 +281,7 @@ export default function Rooms() {
 
         <div className="rounded-2xl border border-slate-700 bg-slate-800/80 p-3">
           <select
-            className="w-full rounded-xl border border-slate-600 bg-slate-700 px-3 py-2 text-sm text-slate-100 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/40"
+            className="filter-select w-full rounded-xl px-3 py-2 text-sm"
             value={statusFilter}
             onChange={(e) => setStatusFilter(e.target.value)}
           >
@@ -295,7 +295,7 @@ export default function Rooms() {
         </div>
       </div>
 
-      <div className="overflow-x-auto rounded-2xl border border-slate-700 bg-slate-800/80">
+      <div className="app-scrollbar overflow-x-auto rounded-2xl border border-slate-700 bg-slate-800/80">
         <table className="w-full min-w-[400px] text-sm">
           <thead className="border-b border-slate-700 bg-slate-800">
             <tr>
@@ -337,14 +337,14 @@ export default function Rooms() {
                 <td className="flex items-center gap-1 px-4 py-3">
                   <button
                     type="button"
-                    className="rounded-lg bg-slate-600/80 px-2 py-1 text-xs text-white hover:bg-slate-500"
+                    className="action-btn action-btn-neutral action-btn-sm"
                     onClick={() => setQuickViewRoom(room)}
                   >
                     Ver
                   </button>
                   <button
                     type="button"
-                    className="rounded-lg bg-emerald-600/80 px-2 py-1 text-xs text-white hover:bg-emerald-500"
+                    className="action-btn action-btn-info action-btn-sm"
                     onClick={() => {
                       setFormError("");
                       setEditingRoom(room);
@@ -356,7 +356,7 @@ export default function Rooms() {
                   <button
                     type="button"
                     onClick={() => setDeletingRoom(room)}
-                    className="rounded-lg bg-red-600/80 px-2 py-1 text-xs text-white hover:bg-red-500"
+                    className="action-btn action-btn-danger action-btn-sm"
                   >
                     Eliminar
                   </button>
