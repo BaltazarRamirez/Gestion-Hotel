@@ -1,5 +1,6 @@
 import { Navigate, useLocation } from "react-router-dom";
 import { useAuth } from "../contexts/AuthContext";
+import AppBackground from "./AppBackground";
 import { PageLoader } from "./Spinner";
 
 export default function ProtectedRoute({ children }) {
@@ -8,8 +9,11 @@ export default function ProtectedRoute({ children }) {
 
   if (loading) {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-slate-900">
-        <PageLoader />
+      <div className="relative flex min-h-screen w-full items-center justify-center">
+        <AppBackground />
+        <div className="relative z-10">
+          <PageLoader />
+        </div>
       </div>
     );
   }
@@ -20,8 +24,11 @@ export default function ProtectedRoute({ children }) {
 
   if (isSupabaseEnabled && isAuthenticated && !profileLoaded) {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-slate-900">
-        <PageLoader />
+      <div className="relative flex min-h-screen w-full items-center justify-center">
+        <AppBackground />
+        <div className="relative z-10">
+          <PageLoader />
+        </div>
       </div>
     );
   }

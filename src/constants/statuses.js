@@ -26,19 +26,27 @@ export const ROOM_STATUS_VALUES = Object.values(ROOM_STATUS);
 export const RESERVATION_STATUS_CONFIG = {
   [RESERVATION_STATUS.Confirmed]: {
     label: "Confirmada",
-    classes: "bg-blue-500/20 text-blue-300 border border-blue-500/30",
+    classes:
+      "border-blue-400/25 bg-gradient-to-r from-blue-500/18 to-cyan-500/12 text-blue-100 shadow-blue-950/20",
+    dotClass: "bg-blue-300 shadow-[0_0_10px_rgba(96,165,250,0.6)]",
   },
   [RESERVATION_STATUS.CheckedIn]: {
     label: "Check-in",
-    classes: "bg-emerald-500/20 text-emerald-300 border border-emerald-500/30",
+    classes:
+      "border-emerald-400/25 bg-gradient-to-r from-emerald-500/18 to-teal-500/12 text-emerald-100 shadow-emerald-950/20",
+    dotClass: "bg-emerald-300 shadow-[0_0_10px_rgba(110,231,183,0.6)]",
   },
   [RESERVATION_STATUS.CheckedOut]: {
     label: "Check-out",
-    classes: "bg-slate-500/20 text-slate-300 border border-slate-500/30",
+    classes:
+      "border-slate-400/20 bg-gradient-to-r from-slate-500/14 to-slate-400/8 text-slate-200 shadow-slate-950/20",
+    dotClass: "bg-slate-300 shadow-[0_0_10px_rgba(203,213,225,0.35)]",
   },
   [RESERVATION_STATUS.Cancelled]: {
     label: "Cancelada",
-    classes: "bg-red-500/20 text-red-300 border border-red-500/30",
+    classes:
+      "border-rose-400/25 bg-gradient-to-r from-rose-500/18 to-red-500/12 text-rose-100 shadow-rose-950/20",
+    dotClass: "bg-rose-300 shadow-[0_0_10px_rgba(253,164,175,0.55)]",
   },
 };
 
@@ -46,15 +54,21 @@ export const RESERVATION_STATUS_CONFIG = {
 export const ROOM_STATUS_CONFIG = {
   [ROOM_STATUS.Disponible]: {
     label: "Disponible",
-    classes: "bg-emerald-500/20 text-emerald-300 border border-emerald-500/30",
+    classes:
+      "border-emerald-400/25 bg-gradient-to-r from-emerald-500/18 to-teal-500/12 text-emerald-100 shadow-emerald-950/20",
+    dotClass: "bg-emerald-300 shadow-[0_0_10px_rgba(110,231,183,0.6)]",
   },
   [ROOM_STATUS.Ocupada]: {
     label: "Ocupada",
-    classes: "bg-red-500/20 text-red-300 border border-red-500/30",
+    classes:
+      "border-rose-400/25 bg-gradient-to-r from-rose-500/18 to-red-500/12 text-rose-100 shadow-rose-950/20",
+    dotClass: "bg-rose-300 shadow-[0_0_10px_rgba(253,164,175,0.55)]",
   },
   [ROOM_STATUS.Limpieza]: {
     label: "Limpieza",
-    classes: "bg-amber-500/20 text-amber-300 border border-amber-500/30",
+    classes:
+      "border-amber-400/25 bg-gradient-to-r from-amber-500/18 to-orange-500/12 text-amber-100 shadow-amber-950/20",
+    dotClass: "bg-amber-300 shadow-[0_0_10px_rgba(252,211,77,0.55)]",
   },
 };
 

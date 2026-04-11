@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { Outlet, NavLink } from "react-router-dom";
+import AppBackground from "../components/AppBackground";
 import Header from "../components/Header";
 import { isSupabaseEnabled } from "../lib/supabase";
 
@@ -15,7 +16,9 @@ export default function AppLayout() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
   return (
-    <div className="flex min-h-screen bg-slate-900">
+    <div className="relative flex min-h-screen w-full">
+      <AppBackground />
+
       {/* Backdrop móvil: fondo oscuro bien visible cuando el menú está abierto */}
       <div
         className="no-print fixed inset-0 z-40 bg-black/80 md:hidden"
@@ -30,7 +33,7 @@ export default function AppLayout() {
 
       {/* SIDEBAR: drawer en móvil, columna fija en md+ */}
       <aside
-        className={`no-print fixed inset-y-0 left-0 z-50 flex w-64 flex-col border-r border-slate-700/80 bg-slate-900 px-4 py-5 transition-transform duration-200 ease-out md:z-0 md:w-[240px] md:translate-x-0 md:px-5 md:py-6 ${
+        className={`no-print fixed inset-y-0 left-0 z-50 flex w-64 flex-col border-r border-slate-700/80 bg-transparent px-4 py-5 transition-transform duration-200 ease-out md:z-10 md:w-[240px] md:translate-x-0 md:px-5 md:py-6 ${
           sidebarOpen ? "translate-x-0" : "-translate-x-full"
         }`}
       >
@@ -63,10 +66,10 @@ export default function AppLayout() {
               onClick={() => setSidebarOpen(false)}
               className={({ isActive }) =>
                 [
-                  "rounded-xl px-3 py-2.5 text-sm transition-colors",
+                  "rounded-2xl border px-3 py-2.5 text-sm transition-all duration-200 hover:translate-x-1",
                   isActive
-                    ? "bg-blue-600 text-white shadow-lg shadow-blue-600/25"
-                    : "text-slate-400 hover:bg-slate-800 hover:text-slate-200",
+                    ? "border-violet-400/35 bg-gradient-to-r from-violet-500/30 via-blue-500/20 to-cyan-500/15 text-white shadow-lg shadow-violet-900/25 backdrop-blur-sm"
+                    : "border-transparent text-slate-400 hover:border-violet-400/20 hover:bg-gradient-to-r hover:from-violet-500/16 hover:via-fuchsia-500/10 hover:to-blue-500/12 hover:text-slate-100 hover:shadow-lg hover:shadow-violet-950/10 hover:backdrop-blur-sm",
                 ].join(" ")
               }
             >
@@ -93,8 +96,8 @@ export default function AppLayout() {
       </aside>
 
       {/* CONTENT */}
-      <div className="flex min-w-0 flex-1 flex-col bg-slate-900 md:ml-[240px]">
-        <header className="no-print border-b border-slate-700/80 bg-slate-800/50 px-4 py-3 md:px-6 md:py-4">
+      <div className="relative z-10 flex min-w-0 flex-1 flex-col md:ml-[240px]">
+        <header className="no-print sticky top-0 z-20 border-b border-slate-700/70 bg-slate-900/45 px-4 py-3 backdrop-blur-xl md:px-6 md:py-4">
           <Header onMenuClick={() => setSidebarOpen(true)} />
         </header>
 

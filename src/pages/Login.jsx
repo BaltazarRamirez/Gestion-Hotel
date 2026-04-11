@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+import { Navigate, useNavigate } from "react-router-dom";
 import { useAuth } from "../contexts/AuthContext";
+import AppBackground from "../components/AppBackground";
 import { PageLoader } from "../components/Spinner";
 
 export default function Login() {
@@ -12,15 +13,22 @@ export default function Login() {
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
-    if (!isSupabaseEnabled || isAuthenticated) {
+    if (isSupabaseEnabled && isAuthenticated) {
       navigate("/dashboard", { replace: true });
     }
   }, [isSupabaseEnabled, isAuthenticated, navigate]);
-  if (!isSupabaseEnabled) return null;
+
+  if (!isSupabaseEnabled) {
+    return <Navigate to="/dashboard" replace />;
+  }
+
   if (authLoading || isAuthenticated) {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-slate-900">
-        <PageLoader />
+      <div className="relative flex min-h-screen w-full items-center justify-center">
+        <AppBackground />
+        <div className="relative z-10">
+          <PageLoader />
+        </div>
       </div>
     );
   }
@@ -40,8 +48,9 @@ export default function Login() {
   }
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-slate-900 px-4">
-      <div className="w-full max-w-sm rounded-2xl border border-slate-700 bg-slate-800/80 p-6 shadow-xl flex flex-col items-center">
+    <div className="relative flex min-h-screen w-full items-center justify-center px-4">
+      <AppBackground />
+      <div className="relative z-10 w-full max-w-sm rounded-2xl border border-slate-700 bg-slate-800/80 p-6 shadow-xl flex flex-col items-center">
       <img
           src="/hotelus-logo.png"
           alt="Hotelus"
